@@ -1,5 +1,6 @@
 const Jimp = require('jimp');
 const inquirer = require('inquirer');
+const fs = require('fs');
 
 const addTextWatermarkToImage = async function(inputFile, outputFile, text) {
   const image = await Jimp.read(inputFile);
@@ -50,20 +51,30 @@ const startApp = async () => {
     type: 'input',
     message: 'What file do you want to mark?',
     default: 'test.jpg',
-  }, {
+  },
+]);
+
+  if (!fs.existsSync(`./img/${options.inputImage}`)) {
+    console.log("The path does not exist. App will be closed.");
+    process.exit();
+  }
+
+  // if file exists... ask about watermark type
+  const watermark = await inquirer.prompt([{
     name: 'watermarkType',
     type: 'list',
     choices: ['Text watermark', 'Image watermark'],
   }]);
 
-  if(options.watermarkType === 'Text watermark') {
+  
+  if(watermark.watermarkType === 'Text watermark') {
     const text = await inquirer.prompt([{
       name: 'value',
       type: 'input',
       message: 'Type your watermark text:',
-    }])
-    options.watermarkText = text.value;
-    addTextWatermarkToImage('./img/' + options.inputImage, './img/' + prepareOutputFilename(options.inputImage), options.watermarkText);
+    }]);
+    watermark.watermarkText = text.value;
+    addTextWatermarkToImage('./img/' + options.inputImage, './img/' + prepareOutputFilename(options.inputImage), watermark.watermarkText);
   }
   else {
     const image = await inquirer.prompt([{
@@ -72,8 +83,12 @@ const startApp = async () => {
       message: 'Type your watermark name:',
       default: 'logo.png',
     }])
+    if (!fs.existsSync(`./img/${image.filename}`)) {
+      console.log('The path does not exist. App will be closed');
+    } else {
     options.watermarkImage = image.filename;
     addImageWatermarkToImage('./img/' + options.inputImage, './img/' + prepareOutputFilename(options.inputImage), './img/' + options.watermarkImage);
+    }
   }
 
 };
